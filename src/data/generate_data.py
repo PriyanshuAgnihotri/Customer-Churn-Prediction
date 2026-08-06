@@ -1,41 +1,151 @@
-import pandas as pd
+"""Synthetic Customer Churn Dataset Generator."""
+
+from pathlib import Path
+
 import numpy as np
-from datetime import datetime, timedelta
-import os
+import pandas as pd
+import yaml
 
-np.random.seed(42)
 
-def generate_data(n_users=10000):
-    data = pd.DataFrame({
-        "user_id": range(1, n_users+1),
-        "signup_date": [datetime(2023,1,1) + timedelta(days=np.random.randint(0,365)) for _ in range(n_users)],
-    })
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+CONFIG_PATH = PROJECT_ROOT / "config.yaml"
 
-    data["last_active_date"] = data["signup_date"] + pd.to_timedelta(np.random.randint(1, 365, n_users), unit='d')
 
-    data["transaction_count"] = np.random.poisson(20, n_users)
-    data["transaction_value"] = np.round(np.random.exponential(5000, n_users), 2)
-    data["session_frequency"] = np.random.randint(1, 50, n_users)
+def load_config() -> dict:
+    """Load project configuration."""
 
-    data["device_type"] = np.random.choice(["Android","iOS","Web"], n_users, p=[0.6,0.3,0.1])
-    data["location"] = np.random.choice(["Tier1","Tier2","Tier3"], n_users)
+    with CONFIG_PATH.open("r", encoding="utf-8") as file:
+        return yaml.safe_load(file)
 
-    data["payment_type"] = np.random.choice(["UPI","Wallet","Card"], n_users)
 
-    data["failed_transactions"] = np.random.poisson(2, n_users)
-    data["support_tickets"] = np.random.poisson(1, n_users)
+def create_rng(seed: int) -> np.random.Generator:
+    """Create reproducible random number generator."""
 
-    data["marketing_exposure"] = np.random.choice([0,1], n_users)
+    return np.random.default_rng(seed)
 
-    data["tenure_days"] = (data["last_active_date"] - data["signup_date"]).dt.days
 
-    today = datetime(2024,1,1)
-    data["days_since_last_active"] = (today - data["last_active_date"]).dt.days
+def generate_customer_ids(
+    n_customers: int,
+) -> list[str]:
+    """Generate customer IDs."""
 
-    data["churn"] = (data["days_since_last_active"] > 30).astype(int)
+    return [
+        f"CUST_{customer_id:06d}"
+        for customer_id in range(1, n_customers + 1)
+    ]
 
-    os.makedirs("data/raw", exist_ok=True)
-    data.to_csv("data/raw/fintech_churn.csv", index=False)
+
+def generate_customer_base(
+    config: dict,
+    rng: np.random.Generator,
+) -> pd.DataFrame:
+    """Generate customer lifecycle."""
+
+    n_customers = config["data"]["n_customers"]
+
+    snapshot_date = pd.Timestamp(
+        config["data"]["snapshot_date"]
+    )
+
+    signup_days = rng.integers(
+        low=30,
+        high=365 * 5,
+        size=n_customers,
+    )
+
+    signup_dates = (
+        snapshot_date
+        - pd.to_timedelta(signup_days, unit="D")
+    )
+
+    tenure_months = (
+        signup_days / 30.44
+    ).astype(int)
+
+    return pd.DataFrame(
+        {
+            "customer_id": generate_customer_ids(n_customers),
+            "signup_date": signup_dates,
+            "snapshot_date": snapshot_date,
+            "tenure_months": tenure_months,
+        }
+    )
+
+
+def generate_customer_profile(
+    customers: pd.DataFrame,
+    rng: np.random.Generator,
+) -> pd.DataFrame:
+    """Generate customer profile."""
+
+    n_customers = len(customers)
+
+    customers["country"] = rng.choice(
+        [
+            "United States",
+            "Canada",
+            "United Kingdom",
+            "Germany",
+            "Australia",
+            "India",
+        ],
+        size=n_customers,
+        p=[0.40, 0.12, 0.15, 0.10, 0.08, 0.15],
+    )
+
+    customers["industry"] = rng.choice(
+        [
+            "Technology",
+            "Finance",
+            "Healthcare",
+            "Retail",
+            "Manufacturing",
+            "Professional Services",
+        ],
+        size=n_customers,
+        p=[0.25, 0.15, 0.15, 0.15, 0.12, 0.18],
+    )
+
+    customers["company_size"] = rng.choice(
+        [
+            "Small",
+            "Mid-Market",
+            "Enterprise",
+        ],
+        size=n_customers,
+        p=[0.55, 0.30, 0.15],
+    )
+
+    return customers
+
+
+def main() -> None:
+    """Run data generation."""
+
+    config = load_config()
+
+    rng = create_rng(
+        config["project"]["random_seed"]
+    )
+
+    customers = generate_customer_base(
+    config,
+    rng,
+    )
+    customers = generate_customer_profile(
+    customers,
+    rng,
+    )
+
+    print(customers.head())
+    print("\nShape:", customers.shape)
+    print("\nCompany Size")
+    print(
+    customers["company_size"]
+    .value_counts(normalize=True)
+    .round(3)
+    )
+
 
 if __name__ == "__main__":
-    generate_data()
+    main()

@@ -1,0 +1,16 @@
+project:
+  name: "Customer Churn Prediction"
+  random_seed: 42
+
+data:
+  n_customers: 10000
+  snapshot_date: "2026-06-30"
+  prediction_window_days: 30
+
+paths:
+  raw_data: "data/raw/customer_churn.csv"
+  processed_data: "data/processed/customer_churn_processed.csv"
+
+target:
+  column: "churn"
+  
