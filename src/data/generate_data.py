@@ -7,6 +7,9 @@ import pandas as pd
 import yaml
 from src.generators.usage import generate_usage_metrics
 from src.utils.validation import validate_dataset
+from src.generators.support import generate_support_metrics
+from src.generators.payment import generate_payment_metrics
+from src.generators.churn import generate_churn_signal
 
 
 from src.generators.customer import (
@@ -20,15 +23,6 @@ from src.generators.subscription import (
     generate_contract_type,
     generate_monthly_revenue,
     generate_auto_renew,
-)
-
-
-from src.constants.usage_rules import (
-    LOGIN_MEAN,
-    LOGIN_STD,
-    ACTIVE_DAY_MEAN,
-    SESSION_MEAN,
-    FEATURE_SCORE_MEAN,
 )
 
 
@@ -99,75 +93,71 @@ def main() -> None:
     rng,
     )
 
-    customers = generate_auto_renew(
-    customers,
-    rng,
-    )
+    customers = generate_auto_renew(customers, rng,)
     
-    customers = generate_usage_metrics(
-    customers,
-    rng,
-    )
+    customers = generate_usage_metrics(customers, rng,)
+    
+    customers = generate_support_metrics(customers, rng)
+
+    customers = generate_payment_metrics(customers, rng)
+
+    customers = generate_churn_signal(customers, rng)
+
     validate_dataset(customers)
     
     print(customers.head())
     print("\nShape:", customers.shape)
+    print("\nChurn Rate:", customers["churn"].mean().round(3))
+    print("\nChurn Distribution:")
+    print(customers["churn"].value_counts(normalize=True).round(3))
+    
+    output_path = PROJECT_ROOT / "data" / "raw" / "customer_churn.csv"
+    customers.to_csv(output_path, index=False)
+    print(f"\nDataset saved to: {output_path}")
+    
+    print(customers.head())
+    print("\nShape:", customers.shape)
     print("\nRevenue Summary")
     print(
-        customers["monthly_revenue"]
-        .describe()
-        .round(2)
+        customers["monthly_revenue"].describe().round(2)
     )
 
     print("\nContract Distribution")
 
     print(
-        customers["contract_type"]
-        .value_counts(normalize=True)
-        .round(3)
+        customers["contract_type"].value_counts(normalize=True).round(3)
     )
 
     print("\nAverage Revenue by Plan")
 
     print(
-        customers.groupby("subscription_plan")["monthly_revenue"]
-        .mean()
-        .round(2)
+        customers.groupby("subscription_plan")["monthly_revenue"].mean().round(2)
     )
     
     output_path = PROJECT_ROOT / "data" / "raw" / "customer_churn.csv"
 
-    customers.to_csv(
-        output_path,
-        index=False,
-    )
+    customers.to_csv(output_path, index=False,)
 
     print(f"\nDataset saved to: {output_path}")
     print(f"Shape: {customers.shape}")
     
-    print(customers.head())
+    print(customers["payment_method"].value_counts(normalize=True).round(3))
 
     print("\nShape:", customers.shape)
 
     print("\nRevenue Summary")
     print(
-        customers["monthly_revenue"]
-        .describe()
-        .round(2)
+        customers["monthly_revenue"].describe().round(2)
     )
 
     print("\nContract Distribution")
     print(
-        customers["contract_type"]
-        .value_counts(normalize=True)
-        .round(3)
+        customers["contract_type"].value_counts(normalize=True).round(3)
     )
 
     print("\nAverage Revenue by Plan")
     print(
-        customers.groupby("subscription_plan")["monthly_revenue"]
-        .mean()
-        .round(2)
+        customers.groupby("subscription_plan")["monthly_revenue"].mean().round(2)
     )
     
     print("\nUsage Summary")
@@ -181,9 +171,7 @@ def main() -> None:
                 "days_since_last_login",
                 "usage_change_30d",
             ]
-        ]
-        .describe()
-        .round(2)
+        ].describe().round(2)
     )
 
     print("\nAverage Usage by Subscription Plan")
@@ -194,11 +182,40 @@ def main() -> None:
             "active_days_last_30",
             "feature_usage_score",
             ]
-        ]
-        .mean()
-        .round(1)
+        ].mean().round(1)
+    )
+    
+    
+    print("\nSupport Summary")
+
+    print(
+        customers[
+            [
+            "support_tickets_last_90d",
+            "avg_resolution_hours",
+            "customer_satisfaction_score",
+            ]
+        ].describe().round(2)
+    )
+    
+    print("\nPayment Summary")
+    
+    print(
+        customers[["failed_payments_last_6m"]]
+        .describe().round(2)
     )
 
+    print("\nAverage Satisfaction by Plan")
+    print(
+        customers.groupby("subscription_plan")[
+            "customer_satisfaction_score"
+        ]
+        .mean().round(1)
+    )
+
+    print("\nPayment Method Distribution")
+
+    print(customers["payment_method"].value_counts(normalize=True).round(3))
 
 if __name__ == "__main__":
     main()
