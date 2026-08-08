@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from src.generators.usage import generate_usage_metrics
+from src.utils.validation import validate_dataset
 
 
 from src.generators.customer import (
@@ -24,9 +25,10 @@ from src.generators.subscription import (
 
 from src.constants.usage_rules import (
     LOGIN_MEAN,
-    ACTIVE_DAYS_MEAN,
-    SESSION_DURATION,
-    FEATURE_USAGE_MEAN,
+    LOGIN_STD,
+    ACTIVE_DAY_MEAN,
+    SESSION_MEAN,
+    FEATURE_SCORE_MEAN,
 )
 
 
@@ -106,6 +108,7 @@ def main() -> None:
     customers,
     rng,
     )
+    validate_dataset(customers)
     
     print(customers.head())
     print("\nShape:", customers.shape)
@@ -175,6 +178,8 @@ def main() -> None:
                 "active_days_last_30",
                 "avg_session_minutes",
                 "feature_usage_score",
+                "days_since_last_login",
+                "usage_change_30d",
             ]
         ]
         .describe()
@@ -186,6 +191,7 @@ def main() -> None:
         customers.groupby("subscription_plan")[
             [
             "monthly_logins",
+            "active_days_last_30",
             "feature_usage_score",
             ]
         ]

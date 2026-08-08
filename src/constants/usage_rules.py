@@ -1,25 +1,36 @@
 """Usage generation rules."""
 
 LOGIN_MEAN = {
-    "Small": 18,
-    "Mid-Market": 35,
-    "Enterprise": 70,
+    "Basic": 18,
+    "Pro": 35,
+    "Business": 60,
+    "Enterprise": 90,
 }
 
-ACTIVE_DAYS_MEAN = {
-    "Small": 10,
-    "Mid-Market": 18,
+LOGIN_STD = {
+    "Basic": 5,
+    "Pro": 7,
+    "Business": 10,
+    "Enterprise": 15,
+}
+
+ACTIVE_DAY_MEAN = {
+    "Basic": 8,
+    "Pro": 14,
+    "Business": 20,
     "Enterprise": 25,
 }
 
-SESSION_DURATION = {
-    "Small": 12,
-    "Mid-Market": 18,
-    "Enterprise": 28,
+SESSION_MEAN = {
+    "Basic": 10,
+    "Pro": 16,
+    "Business": 22,
+    "Enterprise": 30,
 }
 
-FEATURE_USAGE_MEAN = {
-    "Small": 45,
-    "Mid-Market": 65,
-    "Enterprise": 85,
+FEATURE_SCORE_MEAN = {
+    "Basic": 35,
+    "Pro": 55,
+    "Business": 75,
+    "Enterprise": 92,
 }
