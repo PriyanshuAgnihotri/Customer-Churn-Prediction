@@ -5,10 +5,55 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
+from src.generators.usage import generate_usage_metrics
+
+
+from src.generators.customer import (
+    create_rng,
+    generate_customer_base,
+    generate_customer_profile,
+)
+
+from src.generators.subscription import (
+    generate_subscription_plan,
+    generate_contract_type,
+    generate_monthly_revenue,
+    generate_auto_renew,
+)
+
+
+from src.constants.usage_rules import (
+    LOGIN_MEAN,
+    ACTIVE_DAYS_MEAN,
+    SESSION_DURATION,
+    FEATURE_USAGE_MEAN,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = PROJECT_ROOT / "config.yaml"
+
+
+PLAN_RULES = {
+    "Small": {
+        "Basic": 0.60,
+        "Pro": 0.30,
+        "Business": 0.09,
+        "Enterprise": 0.01,
+    },
+    "Mid-Market": {
+        "Basic": 0.10,
+        "Pro": 0.35,
+        "Business": 0.45,
+        "Enterprise": 0.10,
+    },
+    "Enterprise": {
+        "Basic": 0.01,
+        "Pro": 0.09,
+        "Business": 0.35,
+        "Enterprise": 0.55,
+    },
+}
 
 
 def load_config() -> dict:
@@ -16,107 +61,6 @@ def load_config() -> dict:
 
     with CONFIG_PATH.open("r", encoding="utf-8") as file:
         return yaml.safe_load(file)
-
-
-def create_rng(seed: int) -> np.random.Generator:
-    """Create reproducible random number generator."""
-
-    return np.random.default_rng(seed)
-
-
-def generate_customer_ids(
-    n_customers: int,
-) -> list[str]:
-    """Generate customer IDs."""
-
-    return [
-        f"CUST_{customer_id:06d}"
-        for customer_id in range(1, n_customers + 1)
-    ]
-
-
-def generate_customer_base(
-    config: dict,
-    rng: np.random.Generator,
-) -> pd.DataFrame:
-    """Generate customer lifecycle."""
-
-    n_customers = config["data"]["n_customers"]
-
-    snapshot_date = pd.Timestamp(
-        config["data"]["snapshot_date"]
-    )
-
-    signup_days = rng.integers(
-        low=30,
-        high=365 * 5,
-        size=n_customers,
-    )
-
-    signup_dates = (
-        snapshot_date
-        - pd.to_timedelta(signup_days, unit="D")
-    )
-
-    tenure_months = (
-        signup_days / 30.44
-    ).astype(int)
-
-    return pd.DataFrame(
-        {
-            "customer_id": generate_customer_ids(n_customers),
-            "signup_date": signup_dates,
-            "snapshot_date": snapshot_date,
-            "tenure_months": tenure_months,
-        }
-    )
-
-
-def generate_customer_profile(
-    customers: pd.DataFrame,
-    rng: np.random.Generator,
-) -> pd.DataFrame:
-    """Generate customer profile."""
-
-    n_customers = len(customers)
-
-    customers["country"] = rng.choice(
-        [
-            "United States",
-            "Canada",
-            "United Kingdom",
-            "Germany",
-            "Australia",
-            "India",
-        ],
-        size=n_customers,
-        p=[0.40, 0.12, 0.15, 0.10, 0.08, 0.15],
-    )
-
-    customers["industry"] = rng.choice(
-        [
-            "Technology",
-            "Finance",
-            "Healthcare",
-            "Retail",
-            "Manufacturing",
-            "Professional Services",
-        ],
-        size=n_customers,
-        p=[0.25, 0.15, 0.15, 0.15, 0.12, 0.18],
-    )
-
-    customers["company_size"] = rng.choice(
-        [
-            "Small",
-            "Mid-Market",
-            "Enterprise",
-        ],
-        size=n_customers,
-        p=[0.55, 0.30, 0.15],
-    )
-
-    return customers
 
 
 def main() -> None:
@@ -132,18 +76,121 @@ def main() -> None:
     config,
     rng,
     )
+    
     customers = generate_customer_profile(
     customers,
     rng,
     )
+    
+    customers = generate_subscription_plan(
+    customers,
+    rng,
+    )
+    
+    customers = generate_contract_type(
+    customers,
+    rng,
+    )
 
+    customers = generate_monthly_revenue(
+    customers,
+    rng,
+    )
+
+    customers = generate_auto_renew(
+    customers,
+    rng,
+    )
+    
+    customers = generate_usage_metrics(
+    customers,
+    rng,
+    )
+    
     print(customers.head())
     print("\nShape:", customers.shape)
-    print("\nCompany Size")
+    print("\nRevenue Summary")
     print(
-    customers["company_size"]
-    .value_counts(normalize=True)
-    .round(3)
+        customers["monthly_revenue"]
+        .describe()
+        .round(2)
+    )
+
+    print("\nContract Distribution")
+
+    print(
+        customers["contract_type"]
+        .value_counts(normalize=True)
+        .round(3)
+    )
+
+    print("\nAverage Revenue by Plan")
+
+    print(
+        customers.groupby("subscription_plan")["monthly_revenue"]
+        .mean()
+        .round(2)
+    )
+    
+    output_path = PROJECT_ROOT / "data" / "raw" / "customer_churn.csv"
+
+    customers.to_csv(
+        output_path,
+        index=False,
+    )
+
+    print(f"\nDataset saved to: {output_path}")
+    print(f"Shape: {customers.shape}")
+    
+    print(customers.head())
+
+    print("\nShape:", customers.shape)
+
+    print("\nRevenue Summary")
+    print(
+        customers["monthly_revenue"]
+        .describe()
+        .round(2)
+    )
+
+    print("\nContract Distribution")
+    print(
+        customers["contract_type"]
+        .value_counts(normalize=True)
+        .round(3)
+    )
+
+    print("\nAverage Revenue by Plan")
+    print(
+        customers.groupby("subscription_plan")["monthly_revenue"]
+        .mean()
+        .round(2)
+    )
+    
+    print("\nUsage Summary")
+    print(
+        customers[
+            [
+                "monthly_logins",
+                "active_days_last_30",
+                "avg_session_minutes",
+                "feature_usage_score",
+            ]
+        ]
+        .describe()
+        .round(2)
+    )
+
+    print("\nAverage Usage by Subscription Plan")
+    print(
+        customers.groupby("subscription_plan")[
+            [
+            "monthly_logins",
+            "feature_usage_score",
+            ]
+        ]
+        .mean()
+        .round(1)
     )
 
 

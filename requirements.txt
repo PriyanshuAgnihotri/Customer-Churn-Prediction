@@ -1,0 +1,17 @@
+# Core data processing
+numpy
+pandas
+
+# Visualization
+matplotlib
+seaborn
+
+# Machine learning
+scikit-learn
+
+# Configuration
+PyYAML
+
+# Notebook environment
+jupyter
+ipykernel
