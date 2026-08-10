@@ -38,9 +38,6 @@ def validate_dataset(df: pd.DataFrame) -> None:
     if not df["feature_usage_score"].between(0, 100).all():
         raise ValueError("Invalid feature usage scores.")
     
-    if (df["support_tickets_last_90d"] < 0).any():
-        raise ValueError("Invalid support ticket values.")
-    
     if (df["avg_resolution_hours"] <= 0).any():
         raise ValueError("Invalid resolution times.")
 

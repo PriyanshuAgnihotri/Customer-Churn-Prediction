@@ -1,13 +1,15 @@
-import pandas as pd
 import joblib
+import pandas as pd
 
+from pathlib import Path
 from sklearn.compose import ColumnTransformer
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 
-PROJECT_ROOT = __import__("pathlib").Path(__file__).resolve().parents[2]
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def main() -> None:
@@ -28,16 +30,22 @@ def main() -> None:
     X = df.drop(columns=drop_columns)
     y = df[target]
 
-    categorical_features = X.select_dtypes(include=["object", "string"]).columns.tolist()
-    numeric_features = X.select_dtypes(exclude="object").columns.tolist()
+    categorical_features = X.select_dtypes(
+        include=["object", "string"]
+    ).columns.tolist()
+
+    if "auto_renew" not in categorical_features:
+        categorical_features.append("auto_renew")
+
+    numeric_features = [
+        column
+        for column in X.columns
+        if column not in categorical_features
+        ]
 
     preprocessor = ColumnTransformer(
         [
-            (
-                "numeric",
-                StandardScaler(),
-                numeric_features,
-            ),
+            ("numeric", "passthrough", numeric_features),
             (
                 "categorical",
                 OneHotEncoder(handle_unknown="ignore"),
@@ -49,7 +57,17 @@ def main() -> None:
     model = Pipeline(
         [
             ("preprocessor", preprocessor),
-            ("classifier", LogisticRegression(max_iter=1000)),
+            (
+                "classifier",
+                RandomForestClassifier(
+                    n_estimators=300,
+                    max_depth=10,
+                    min_samples_leaf=5,
+                    class_weight="balanced",
+                    random_state=42,
+                    n_jobs=-1,
+                ),
+            ),
         ]
     )
 
@@ -65,13 +83,12 @@ def main() -> None:
 
     joblib.dump(
         model,
-        PROJECT_ROOT / "api" / "model.pkl",
+        PROJECT_ROOT / "api" / "random_forest_model.pkl",
     )
 
-    print("Model trained successfully.")
+    print("Random Forest trained successfully.")
     print("Training rows:", len(X_train))
     print("Test rows:", len(X_test))
-    print("Features:", X.shape[1])
 
 
 if __name__ == "__main__":
