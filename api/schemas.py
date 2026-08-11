@@ -21,3 +21,7 @@ class CustomerRequest(BaseModel):
     customer_satisfaction_score: float = Field(ge=0, le=100)
     failed_payments_last_6m: int = Field(ge=0)
     payment_method: str
+    
+class PredictionResponse(BaseModel):
+    churn_probability: float = Field(ge=0, le=1)
+    risk_level: str

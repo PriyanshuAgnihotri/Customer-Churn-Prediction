@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from api.schemas import CustomerRequest
+from api.schemas import CustomerRequest, PredictionResponse
 from src.models.predict import predict_churn
 
 
@@ -15,6 +15,9 @@ def health() -> dict:
     return {"status": "healthy"}
 
 
-@app.post("/predict")
-def predict(customer: CustomerRequest) -> dict:
+@app.post(
+    "/predict",
+    response_model=PredictionResponse,
+)
+def predict(customer: CustomerRequest):
     return predict_churn(customer.model_dump())
