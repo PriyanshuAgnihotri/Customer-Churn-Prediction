@@ -11,12 +11,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = PROJECT_ROOT / "api" / "random_forest_model.pkl"
 
 
-def load_model():
-    return joblib.load(MODEL_PATH)
+model = joblib.load(MODEL_PATH)
 
 
 def predict_churn(customer: dict) -> dict:
-    model = load_model()
 
     # Convert incoming API request to DataFrame
     df = pd.DataFrame([customer])
