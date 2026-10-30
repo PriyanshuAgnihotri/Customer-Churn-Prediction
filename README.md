@@ -36,6 +36,24 @@ The system covers the complete workflow:
 
 ## 🌐 Live Demo
 
+### Interactive Customer Churn Prediction
+
+Try the live application:
+
+**[Launch Customer Churn Prediction Demo](https://cutchurn.streamlit.app)**
+
+The interactive Streamlit application allows users to enter
+customer profile, subscription, engagement, and payment details
+and receive a churn probability and risk classification.
+
+### Public API
+
+https://customer-churn-api-qmev.onrender.com
+
+### Interactive Swagger Documentation
+
+https://customer-churn-api-qmev.onrender.com/docs
+
 ### Public API
 
 ```text
