@@ -9,7 +9,7 @@ class CustomerRequest(BaseModel):
     subscription_plan: str
     contract_type: str
     monthly_revenue: float = Field(gt=0)
-    auto_renew: str
+    auto_renew: int = Field(ge=0, le=1)
     monthly_logins: int = Field(ge=0)
     active_days_last_30: int = Field(ge=0, le=30)
     avg_session_minutes: float = Field(ge=0)

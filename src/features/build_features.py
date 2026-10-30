@@ -30,7 +30,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     ).astype(int)
 
     df["is_non_renewing"] = (
-        df["auto_renew"] == "No"
+        df["auto_renew"] == 0
     ).astype(int)
 
     return df

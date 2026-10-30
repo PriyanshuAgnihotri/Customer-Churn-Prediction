@@ -56,7 +56,7 @@ def generate_churn_signal(
     )
 
     risk += np.where(
-        customers["auto_renew"] == "No",
+        customers["auto_renew"] == 0,
         NON_RENEWAL_WEIGHT,
         0,
     )

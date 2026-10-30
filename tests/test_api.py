@@ -9,11 +9,11 @@ VALID_CUSTOMER = {
     "tenure_months": 24,
     "country": "United States",
     "industry": "Technology",
-    "company_size": "Medium",
+    "company_size": "Mid-Market",
     "subscription_plan": "Business",
     "contract_type": "Monthly",
     "monthly_revenue": 250.0,
-    "auto_renew": "No",
+    "auto_renew": 0,
     "monthly_logins": 12,
     "active_days_last_30": 7,
     "avg_session_minutes": 12.0,
@@ -98,6 +98,15 @@ def test_predict_rejects_invalid_satisfaction_score():
 def test_predict_rejects_missing_required_field():
     customer = VALID_CUSTOMER.copy()
     del customer["country"]
+
+    response = client.post("/predict", json=customer)
+
+    assert response.status_code == 422
+    
+    
+def test_predict_rejects_invalid_auto_renew():
+    customer = VALID_CUSTOMER.copy()
+    customer["auto_renew"] = 2
 
     response = client.post("/predict", json=customer)
 
