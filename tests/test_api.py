@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from api.app import app
@@ -102,8 +103,8 @@ def test_predict_rejects_missing_required_field():
     response = client.post("/predict", json=customer)
 
     assert response.status_code == 422
-    
-    
+
+
 def test_predict_rejects_invalid_auto_renew():
     customer = VALID_CUSTOMER.copy()
     customer["auto_renew"] = 2
@@ -111,3 +112,76 @@ def test_predict_rejects_invalid_auto_renew():
     response = client.post("/predict", json=customer)
 
     assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    ("field", "invalid_value"),
+    [
+        ("country", "Unknown Country"),
+        ("industry", "Unknown Industry"),
+        ("company_size", "Huge"),
+        ("subscription_plan", "Premium Plus"),
+        ("contract_type", "Lifetime"),
+        ("payment_method", "Crypto"),
+    ],
+)
+def test_predict_rejects_invalid_categories(field, invalid_value):
+    customer = VALID_CUSTOMER.copy()
+    customer[field] = invalid_value
+
+    response = client.post("/predict", json=customer)
+
+    assert response.status_code == 422
+
+
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Cache-Control": "no-store",
+}
+
+
+def test_health_response_contains_security_headers():
+    response = client.get("/health")
+
+    for header, expected_value in SECURITY_HEADERS.items():
+        assert response.headers.get(header) == expected_value
+
+
+def test_predict_response_contains_security_headers():
+    response = client.post("/predict", json=VALID_CUSTOMER)
+
+    for header, expected_value in SECURITY_HEADERS.items():
+        assert response.headers.get(header) == expected_value
+
+
+def test_predict_rate_limit_returns_429():
+    app.state.limiter.reset()
+
+    rate_limit_client = TestClient(app)
+
+    responses = [
+        rate_limit_client.post("/predict", json=VALID_CUSTOMER)
+        for _ in range(11)
+    ]
+
+    assert all(
+        response.status_code == 200
+        for response in responses[:10]
+    )
+    assert responses[10].status_code == 429
+
+
+def test_health_remains_accessible_after_predict_rate_limit():
+    app.state.limiter.reset()
+
+    rate_limit_client = TestClient(app)
+
+    for _ in range(11):
+        rate_limit_client.post("/predict", json=VALID_CUSTOMER)
+
+    response = rate_limit_client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "healthy"

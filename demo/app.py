@@ -19,11 +19,7 @@ st.info(
 
 with st.sidebar:
     st.header("API Configuration")
-    api_url = st.text_input(
-        "Prediction API URL",
-        value=API_URL,
-    )
-    st.caption("The demo sends customer inputs to your FastAPI backend.")
+    st.caption("Connected to the official Customer Churn Prediction API.")
 
 st.subheader("Customer Information")
 
@@ -155,9 +151,9 @@ if submitted:
     try:
         with st.spinner("Analyzing customer churn risk..."):
             response = requests.post(
-                api_url,
+                API_URL,
                 json=payload,
-                timeout=120,
+                timeout=30,
             )
 
         if response.status_code == 200:
@@ -195,11 +191,19 @@ if submitted:
             )
 
         else:
-            st.error(f"API error: HTTP {response.status_code}")
-            st.code(response.text)
+            st.error(
+                "The prediction service could not process your request. "
+                "Please try again later."
+            )
 
     except requests.exceptions.Timeout:
-        st.error("The API request timed out. Please try again.")
+        st.error(
+            "The prediction service took too long to respond. "
+            "Please try again."
+        )
 
-    except requests.exceptions.RequestException as error:
-        st.error(f"Unable to connect to the prediction API: {error}")
+    except requests.exceptions.RequestException:
+        st.error(
+            "Unable to connect to the prediction service. "
+            "Please try again later."
+        )
