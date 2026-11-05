@@ -1,8 +1,36 @@
+# Python environments and cache
 .venv/
+venv/
+env/
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
+.coverage
+htmlcov/
+
+# Git and IDE
 .git/
 .gitignore
-.DS_Store
+.github/
 .vscode/
+.idea/
+.DS_Store
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Development and training files
+tests/
+notebooks/
+dashboard/
+data/
+docs/
+backup/
+backups/
+
+# Temporary files and logs
+*.log
+*.tmp
+*.temp
